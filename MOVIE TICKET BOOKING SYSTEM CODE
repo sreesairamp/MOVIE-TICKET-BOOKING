@@ -1,0 +1,283 @@
+#include <iostream>
+#include <iomanip>
+#include <string>
+#include <vector>
+#include <cstdlib>
+#include <ctime>
+using namespace std;
+
+const int ROWS = 6;
+const int COLUMNS = 8;
+
+struct User {
+    string name;
+    string email;
+    string phone;
+    bool isRegistered = false;
+};
+
+struct Movie {
+    string title;
+    string time;
+    float pricing[ROWS];
+    char seats[ROWS][COLUMNS];
+};
+
+struct Theater {
+    string name;
+    vector<Movie> movies;
+};
+
+void drawLine(char ch, int length) {
+    for (int i = 0; i < length; i++) cout << ch;
+    cout << endl;
+}
+
+void initializeSeats(Movie &movie) {
+    for (int i = 0; i < ROWS; i++) {
+        for (int j = 0; j < COLUMNS; j++) {
+            movie.seats[i][j] = 'O';
+        }
+    }
+
+    srand(time(0));
+    for (int i = 0; i < 5; i++) {
+        int row = rand() % ROWS;
+        int col = rand() % COLUMNS;
+        movie.seats[row][col] = 'X';
+    }
+
+    for (int i = 0; i < ROWS; i++) {
+        if (i < 2)
+            movie.pricing[i] = 100.0;
+        else if (i < 4)
+            movie.pricing[i] = 200.0;
+        else
+            movie.pricing[i] = 300.0;
+    }
+}
+
+void displayTheaters(vector<Theater> &theaters) {
+    drawLine('=', 50);
+    cout << "Available Theaters:\n";
+    drawLine('-', 50);
+    for (size_t i = 0; i < theaters.size(); i++) {
+        cout << i + 1 << ". " << theaters[i].name << endl;
+    }
+    drawLine('=', 50);
+}
+
+void displayMovies(Theater &theater) {
+    drawLine('=', 50);
+    cout << "Movies in " << theater.name << ":\n";
+    drawLine('-', 50);
+    for (size_t i = 0; i < theater.movies.size(); i++) {
+        cout << i + 1 << ". " << theater.movies[i].title << " (" << theater.movies[i].time << ")\n";
+    }
+    drawLine('=', 50);
+}
+
+void displaySeats(Movie &movie) {
+    drawLine('=', 50);
+    cout << "Screen\n";
+    drawLine('-', 50);
+    cout << "Seats Arrangement:\n";
+
+    for (int i = 0; i < ROWS; i++) {
+        cout << "Row " << i + 1 << " Price: ₹" << movie.pricing[i] << endl;
+    }
+
+    drawLine('-', 50);
+    cout << "     ";
+    for (int j = 0; j < COLUMNS; j++) {
+        cout << setw(5) << j + 1;
+    }
+    cout << endl;
+
+    for (int i = 0; i < ROWS; i++) {
+        cout << setw(3) << i + 1 << "   ";
+        for (int j = 0; j < COLUMNS; j++) {
+            char seat = movie.seats[i][j];
+            cout << setw(5) << seat;
+        }
+        cout << endl;
+    }
+    drawLine('=', 50);
+}
+
+bool bookSeat(Movie &movie, int row, int col) {
+    if (row < 1 || row > ROWS || col < 1 || col > COLUMNS) {
+        cout << "Invalid seat. Try again.\n";
+        return false;
+    }
+    if (movie.seats[row - 1][col - 1] == 'X') {
+        cout << "Sorry, this seat is already booked. Please choose another seat.\n";
+        return false;
+    }
+    movie.seats[row - 1][col - 1] = 'X';
+    cout << "Seat booked successfully!\n";
+    return true;
+}
+
+void generateTicket(User &user, Movie &movie, vector<pair<int, int>> bookedSeats) {
+    drawLine('=', 50);
+    cout << "--- TICKET DETAILS ---\n";
+    cout << "Name: " << user.name << "\n";
+    cout << "Email: " << user.email << "\n";
+    cout << "Phone: " << user.phone << "\n";
+    cout << "Movie: " << movie.title << "\n";
+    cout << "Showtime: " << movie.time << "\n";
+    float totalPrice = 0;
+    for (auto &seat : bookedSeats) {
+        int row = seat.first;
+        int col = seat.second;
+        cout << "Seat: Row " << row << ", Column " << col << "\n";
+        totalPrice += movie.pricing[row - 1];
+    }
+    cout << "Total Price: ₹" << fixed << setprecision(2) << totalPrice << "\n";
+    cout << "Enjoy the movie!\n";
+    drawLine('=', 50);
+}
+
+User registerUser() {
+    User user;
+    cout << "Enter your name: ";
+    cin.ignore();
+    getline(cin, user.name);
+    cout << "Enter your email: ";
+    getline(cin, user.email);
+    cout << "Enter your phone: ";
+    getline(cin, user.phone);
+
+    if (user.name.empty() || user.email.empty() || user.phone.empty()) {
+        cout << "Registration failed. All fields are required.\n";
+        user.isRegistered = false;
+    } else {
+        cout << "Registration successful!\n";
+        user.isRegistered = true;
+    }
+    return user;
+}
+
+void addMovie(Theater &theater) {
+    Movie newMovie;
+    cout << "Enter movie title: ";
+    cin.ignore();
+    getline(cin, newMovie.title);
+    cout << "Enter showtime: ";
+    getline(cin, newMovie.time);
+
+    initializeSeats(newMovie);
+    theater.movies.push_back(newMovie);
+    cout << "Movie added to " << theater.name << "!\n";
+}
+
+int main() {
+    vector<Theater> theaters = {
+        {"PVP", {{"Devara", "12:00 PM"}, {"Game Changer", "3:00 PM"}}},
+        {"PVR", {{"Devara", "2:00 PM"}, {"Game Changer", "6:00 PM"}}},
+        {"Trendset Mall", {{"Devara", "1:00 PM"}, {"Game Changer", "5:30 PM"}}}
+    };
+
+    for (auto &theater : theaters) {
+        for (auto &movie : theater.movies) {
+            initializeSeats(movie);
+        }
+    }
+
+    User user;
+    bool isRegistered = false;
+    int choice;
+
+    do {
+        drawLine('=', 50);
+        cout << "Welcome to Movie Booking App!\n";
+        cout << "1. Register\n";
+        cout << "2. View Theatres\n";
+        cout << "3. Book a Ticket\n";
+        cout << "4. Admin: Add Movie\n";
+        cout << "5. Exit\n";
+        drawLine('-', 50);
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                user = registerUser();
+                isRegistered = user.isRegistered;
+                break;
+            case 2:
+                if (isRegistered)
+                    displayTheaters(theaters);
+                else
+                    cout << "Please register first.\n";
+                break;
+            case 3:
+                if (isRegistered) {
+                    displayTheaters(theaters);
+                    int theaterChoice, movieChoice;
+                    cout << "Select Theatre: ";
+                    cin >> theaterChoice;
+                    if (theaterChoice >= 1 && theaterChoice <= theaters.size()) {
+                        displayMovies(theaters[theaterChoice - 1]);
+                        cout << "Select Movie: ";
+                        cin >> movieChoice;
+                        if (movieChoice >= 1 && movieChoice <= theaters[theaterChoice - 1].movies.size()) {
+                            Movie &movie = theaters[theaterChoice - 1].movies[movieChoice - 1];
+                            displaySeats(movie);
+
+                            int numSeats;
+                            cout << "How many seats would you like to book? ";
+                            cin >> numSeats;
+
+                            vector<pair<int, int>> bookedSeats;
+                            int row, col;
+
+                            for (int i = 0; i < numSeats; i++) {
+                                cout << "Enter seat " << i + 1 << " (row column): ";
+                                cin >> row >> col;
+                                bool seatBooked = false;
+                                while (!seatBooked) {
+                                    seatBooked = bookSeat(movie, row, col);
+                                    if (seatBooked)
+                                        bookedSeats.push_back({row, col});
+                                    else {
+                                        cout << "Enter seat " << i + 1 << " again (row column): ";
+                                        cin >> row >> col;
+                                    }
+                                }
+                            }
+                            generateTicket(user, movie, bookedSeats);
+                        } else {
+                            cout << "Invalid movie choice.\n";
+                        }
+                    } else {
+                        cout << "Invalid theatre choice.\n";
+                    }
+                } else {
+                    cout << "Please register first.\n";
+                }
+                break;
+            case 4:
+                if (isRegistered) {
+                    int theaterChoice;
+                    cout << "Select Theater to add movie: ";
+                    cin >> theaterChoice;
+                    if (theaterChoice >= 1 && theaterChoice <= theaters.size())
+                        addMovie(theaters[theaterChoice - 1]);
+                    else
+                        cout << "Invalid theatre choice.\n";
+                } else {
+                    cout << "Please register first.\n";
+                }
+                break;
+            case 5:
+                cout << "Thank you for using Movie Booking App.\n";
+                break;
+            default:
+                cout << "Invalid choice. Try again.\n";
+        }
+    } while (choice != 5);
+
+    return 0;
+}
